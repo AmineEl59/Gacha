@@ -31,6 +31,11 @@ public class TokenValidationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return "OPTIONS".equalsIgnoreCase(request.getMethod());
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
