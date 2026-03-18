@@ -253,7 +253,10 @@ async function login() {
     document.getElementById('userInfo').textContent = '👤 ' + username;
     loadProfil();
   } catch (e) {
-    document.getElementById('loginError').textContent = 'Identifiants incorrects.';
+    const msg = (e instanceof TypeError)
+      ? 'Impossible de contacter le serveur. Vérifie que Docker tourne et que les services sont démarrés.'
+      : 'Identifiants incorrects.';
+    document.getElementById('loginError').textContent = msg;
   }
 }
 
