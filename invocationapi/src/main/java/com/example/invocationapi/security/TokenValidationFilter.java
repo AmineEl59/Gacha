@@ -30,6 +30,14 @@ public class TokenValidationFilter extends OncePerRequestFilter {
         this.authApiUrl = authApiUrl;
     }
 
+    /** Laisse passer les requêtes vers le front-end sans token. */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/") || path.equals("/index.html");
+    }
+
+
     @Override
     @SuppressWarnings("unchecked")
     protected void doFilterInternal(HttpServletRequest request,

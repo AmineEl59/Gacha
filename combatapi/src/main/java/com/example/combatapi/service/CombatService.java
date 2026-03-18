@@ -176,21 +176,21 @@ public class CombatService {
         CombatMonster monster = new CombatMonster();
         monster.id            = monsterId;
         monster.ownerUsername = (String) data.get("ownerUsername");
-        monster.currentHp     = (int) data.get("hp");
-        monster.atk           = (int) data.get("atk");
-        monster.def           = (int) data.get("def");
-        monster.vit           = (int) data.get("vit");
+        monster.currentHp     = ((Number) data.get("hp")).intValue();
+        monster.atk           = ((Number) data.get("atk")).intValue();
+        monster.def           = ((Number) data.get("def")).intValue();
+        monster.vit           = ((Number) data.get("vit")).intValue();
 
         List<Map<String, Object>> rawSkills = (List<Map<String, Object>>) data.get("skills");
         if (rawSkills != null) {
             for (int i = 0; i < rawSkills.size(); i++) {
                 Map<String, Object> s = rawSkills.get(i);
                 CombatSkill skill = new CombatSkill();
-                skill.index        = i;
-                skill.baseDamage   = (int) s.get("baseDamage");
-                skill.statRatio    = ((Number) s.get("statRatio")).doubleValue();
-                skill.statType     = (String) s.get("statType");
-                skill.baseCooldown = (int) s.get("cooldown");
+                skill.index           = i;
+                skill.baseDamage      = ((Number) s.get("baseDamage")).intValue();
+                skill.statRatio       = ((Number) s.get("statRatio")).doubleValue();
+                skill.statType        = (String) s.get("statType");
+                skill.baseCooldown    = ((Number) s.get("cooldown")).intValue();
                 skill.currentCooldown = 0; // disponible dès le départ
                 monster.skills.add(skill);
             }
