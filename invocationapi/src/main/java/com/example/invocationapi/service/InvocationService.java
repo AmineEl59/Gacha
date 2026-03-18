@@ -137,7 +137,7 @@ public class InvocationService {
      * Algorithme d'invocation : tire un monstre au sort selon les taux de probabilité.
      * Package-private pour permettre les tests unitaires.
      */
-    BaseMonster pickRandomMonster() {
+    public BaseMonster pickRandomMonster() {
         List<BaseMonster> monsters = baseMonsterRepository.findAll();
         if (monsters.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Aucun monstre disponible");
