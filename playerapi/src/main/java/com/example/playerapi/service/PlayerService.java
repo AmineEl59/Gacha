@@ -1,34 +1,45 @@
 package com.example.playerapi.service;
 
 import com.example.playerapi.dto.CreateMonsterRequest;
-import com.example.playerapi.model.Monster;
 import com.example.playerapi.model.Player;
-import com.example.playerapi.repository.MonsterRepository;
 import com.example.playerapi.repository.PlayerRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PlayerService {
 
     private final PlayerRepository playerRepository;
-    private final MonsterRepository monsterRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String monsterApiUrl;
 
-    public PlayerService(PlayerRepository playerRepository, MonsterRepository monsterRepository) {
+    public PlayerService(PlayerRepository playerRepository,
+                         @Value("${monster.api.url}") String monsterApiUrl) {
         this.playerRepository = playerRepository;
-        this.monsterRepository = monsterRepository;
+        this.monsterApiUrl = monsterApiUrl;
     }
 
-    // ── Threshold formula ───────────────────────────────────────────
-    // Level 1 → 2 : 50 XP
-    // Level 2 → 3 : 55 XP  (50 * 1.1^1)
-    // Level n → n+1 : round(50 * 1.1^(n-1))
     private int computeThreshold(int level) {
         if (level <= 1) return 50;
         return (int) Math.round(50 * Math.pow(1.1, level - 1));
+    }
+
+    private String getCurrentAuthHeader() {
+        HttpServletRequest request = ((ServletRequestAttributes)
+                RequestContextHolder.currentRequestAttributes()).getRequest();
+        return request.getHeader("Authorization");
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────
@@ -55,7 +66,6 @@ public class PlayerService {
 
     // ── Experience ────────────────────────────────────────────────────
 
-    /** Add XP and cascade level-ups automatically. */
     public Player gainExperience(String username, int amount) {
         Player player = getProfile(username);
         player.setExperience(player.getExperience() + amount);
@@ -68,7 +78,6 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
-    /** Manual level-up: reset XP, raise level, recalculate threshold and max monsters. */
     public Player levelUp(String username) {
         Player player = getProfile(username);
         if (player.getLevel() >= 50) {
@@ -87,15 +96,37 @@ public class PlayerService {
 
     // ── Monster management ────────────────────────────────────────────
 
+    @SuppressWarnings("unchecked")
     public Player addMonster(String username, CreateMonsterRequest req) {
         Player player = getProfile(username);
         if (player.getMonsters().size() >= player.getMaxMonsters()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Monster list is full");
         }
-        Monster monster = new Monster(username, req.getElementType(),
-                req.getHp(), req.getAtk(), req.getDef(), req.getVit());
-        Monster saved = monsterRepository.save(monster);
-        player.getMonsters().add(saved.getId());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", getCurrentAuthHeader());
+        headers.set("Content-Type", "application/json");
+        HttpEntity<CreateMonsterRequest> entity = new HttpEntity<>(req, headers);
+
+        Map<String, Object> monsterResponse = restTemplate.postForObject(
+                monsterApiUrl + "/api/monsters", entity, Map.class);
+
+        if (monsterResponse == null || monsterResponse.get("id") == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create monster");
+        }
+
+        String monsterId = (String) monsterResponse.get("id");
+        player.getMonsters().add(monsterId);
+        return playerRepository.save(player);
+    }
+
+    /** Rattache un monstre déjà existant (créé par invocationapi) au joueur. */
+    public Player linkMonster(String username, String monsterId) {
+        Player player = getProfile(username);
+        if (player.getMonsters().size() >= player.getMaxMonsters()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Monster list is full");
+        }
+        player.getMonsters().add(monsterId);
         return playerRepository.save(player);
     }
 
@@ -104,7 +135,17 @@ public class PlayerService {
         if (!player.getMonsters().remove(monsterId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Monster not found in player list");
         }
-        monsterRepository.deleteById(monsterId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", getCurrentAuthHeader());
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        restTemplate.exchange(
+                monsterApiUrl + "/api/monsters/" + monsterId,
+                HttpMethod.DELETE,
+                entity,
+                Void.class);
+
         return playerRepository.save(player);
     }
 }

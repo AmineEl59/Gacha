@@ -1,6 +1,6 @@
-package com.example.playerapi.repository;
+package com.example.monsterapi.repository;
 
-import com.example.playerapi.model.Monster;
+import com.example.monsterapi.model.Monster;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.example.playerapi.model;
+package com.example.monsterapi.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -43,7 +43,6 @@ public class Monster {
         this.atk = atk;
         this.def = def;
         this.vit = vit;
-        // Default 3 skills
         this.skills.add(new Skill(10, 0.5, StatType.ATK, 2, 0, 5));
         this.skills.add(new Skill(8, 0.3, StatType.DEF, 3, 0, 5));
         this.skills.add(new Skill(12, 0.4, StatType.VIT, 4, 0, 5));

@@ -1,4 +1,4 @@
-package com.example.playerapi.model;
+package com.example.monsterapi.model;
 
 public enum StatType {
     HP, ATK, DEF, VIT

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gacha - Invocation</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        input { display: block; margin: 8px 0; padding: 8px; width: 100%; box-sizing: border-box; }
+        button { padding: 10px 20px; margin: 8px 4px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 4px; display: none; }
+        #error { color: red; margin-top: 10px; }
+        .stat { margin: 4px 0; }
+    </style>
+</head>
+<body>
+
+<h1>Invocation de monstre</h1>
+
+<div>
+    <input type="text" id="token" placeholder="Token d'authentification (Bearer ...)">
+    <button onclick="invoquer()">Invoquer un monstre</button>
+</div>
+
+<div id="error"></div>
+
+<div id="result">
+    <h2>Monstre invoqué !</h2>
+    <div class="stat"><strong>Nom :</strong> <span id="nom"></span></div>
+    <div class="stat"><strong>Type :</strong> <span id="type"></span></div>
+    <div class="stat"><strong>HP :</strong> <span id="hp"></span></div>
+    <div class="stat"><strong>ATK :</strong> <span id="atk"></span></div>
+    <div class="stat"><strong>DEF :</strong> <span id="def"></span></div>
+    <div class="stat"><strong>VIT :</strong> <span id="vit"></span></div>
+    <div class="stat"><strong>ID monstre :</strong> <span id="monsterId"></span></div>
+    <div class="stat"><strong>Statut :</strong> <span id="status"></span></div>
+</div>
+
+<script>
+    async function invoquer() {
+        const token = document.getElementById('token').value.trim();
+        const errorDiv = document.getElementById('error');
+        const resultDiv = document.getElementById('result');
+
+        errorDiv.textContent = '';
+        resultDiv.style.display = 'none';
+
+        if (!token) {
+            errorDiv.textContent = 'Veuillez entrer un token.';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/invocations', {
+                method: 'POST',
+                headers: {
+                    'Authorization': token.startsWith('Bearer ') ? token : 'Bearer ' + token
+                }
+            });
+
+            if (!response.ok) {
+                errorDiv.textContent = 'Erreur ' + response.status + ' : ' + await response.text();
+                return;
+            }
+
+            const invocation = await response.json();
+
+            document.getElementById('nom').textContent = invocation.baseMonsterName;
+            document.getElementById('type').textContent = invocation.elementType;
+            document.getElementById('hp').textContent = invocation.hp;
+            document.getElementById('atk').textContent = invocation.atk;
+            document.getElementById('def').textContent = invocation.def;
+            document.getElementById('vit').textContent = invocation.vit;
+            document.getElementById('monsterId').textContent = invocation.monsterId;
+            document.getElementById('status').textContent = invocation.status;
+
+            resultDiv.style.display = 'block';
+        } catch (e) {
+            errorDiv.textContent = 'Erreur réseau : ' + e.message;
+        }
+    }
+</script>
+
+</body>
+</html>

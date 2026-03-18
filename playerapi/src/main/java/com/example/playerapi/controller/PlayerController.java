@@ -2,6 +2,7 @@ package com.example.playerapi.controller;
 
 import com.example.playerapi.dto.CreateMonsterRequest;
 import com.example.playerapi.dto.ExperienceRequest;
+import com.example.playerapi.dto.LinkMonsterRequest;
 import com.example.playerapi.model.Player;
 import com.example.playerapi.service.PlayerService;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +65,13 @@ public class PlayerController {
     public ResponseEntity<Player> addMonster(@PathVariable String username,
                                               @RequestBody CreateMonsterRequest req) {
         return ResponseEntity.ok(playerService.addMonster(username, req));
+    }
+
+    /** Rattache un monstre déjà existant au joueur (appelé par invocationapi). */
+    @PostMapping("/{username}/monsters/link")
+    public ResponseEntity<Player> linkMonster(@PathVariable String username,
+                                               @RequestBody LinkMonsterRequest req) {
+        return ResponseEntity.ok(playerService.linkMonster(username, req.getMonsterId()));
     }
 
     /** Remove a monster from the player's list and delete it. */
