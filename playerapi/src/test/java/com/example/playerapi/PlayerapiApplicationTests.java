@@ -117,7 +117,7 @@ class PlayerapiApplicationTests {
 
         assertEquals(2, result.getLevel());
         assertEquals(0, result.getExperience());
-        assertEquals(11, result.getMaxMonsters());
+        assertEquals(12, result.getMaxMonsters()); // 10 + level = 10 + 2
     }
 
     @Test
@@ -158,13 +158,20 @@ class PlayerapiApplicationTests {
 
     @Test
     void threshold_formula_matches_spec() {
-        // Spec: level 1→2 : 50 XP, level 2→3 : 55 XP (50 * 1.1)
+        // Level 0→1 : threshold reste 50 (computeThreshold(1) = 50 car level <= 1)
+        // Level 1→2 : threshold = 50 * 1.1^1 = 55 (computeThreshold(2))
         Player player = new Player("alice");
         when(playerRepository.findByUsername("alice")).thenReturn(Optional.of(player));
         when(playerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+        // Après 1er level-up (0→1), threshold = 50
         Player lvl1 = playerService.gainExperience("alice", 50);
         assertEquals(1, lvl1.getLevel());
-        assertEquals(55, lvl1.getExperienceThreshold());
+        assertEquals(50, lvl1.getExperienceThreshold());
+
+        // Après 2ème level-up (1→2), threshold = 55
+        Player lvl2 = playerService.gainExperience("alice", 50);
+        assertEquals(2, lvl2.getLevel());
+        assertEquals(55, lvl2.getExperienceThreshold());
     }
 }
