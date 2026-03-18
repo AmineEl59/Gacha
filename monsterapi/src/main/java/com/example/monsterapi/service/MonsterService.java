@@ -30,9 +30,15 @@ public class MonsterService {
         return monsterRepository.save(monster);
     }
 
-    public Monster getMonster(String monsterId, String requesterUsername) {
-        Monster monster = monsterRepository.findById(monsterId)
+    /** Récupère un monstre sans vérification d'ownership (lecture publique). */
+    public Monster getMonsterById(String monsterId) {
+        return monsterRepository.findById(monsterId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Monster not found"));
+    }
+
+    /** Récupère un monstre en vérifiant que le demandeur en est le propriétaire. */
+    public Monster getMonster(String monsterId, String requesterUsername) {
+        Monster monster = getMonsterById(monsterId);
         if (!monster.getOwnerUsername().equals(requesterUsername)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
         }

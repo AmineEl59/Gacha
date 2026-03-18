@@ -25,10 +25,10 @@ public class MonsterController {
         return ResponseEntity.ok(monsterService.createMonster(auth.getName(), req));
     }
 
-    /** Get monster details (only accessible to the owning player). */
+    /** Get monster details (accessible à tout joueur authentifié). */
     @GetMapping("/{id}")
-    public ResponseEntity<Monster> getMonster(@PathVariable String id, Authentication auth) {
-        return ResponseEntity.ok(monsterService.getMonster(id, auth.getName()));
+    public ResponseEntity<Monster> getMonster(@PathVariable String id) {
+        return ResponseEntity.ok(monsterService.getMonsterById(id));
     }
 
     /** Delete a monster (only accessible to the owning player). */
