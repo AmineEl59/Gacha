@@ -10,4 +10,4 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/monsterapi-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8082
-ENTRYPOINT ["java", "-Dspring.data.mongodb.host=mongodb", "-Dspring.data.mongodb.port=27017", "-Dspring.data.mongodb.database=monsterapi", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

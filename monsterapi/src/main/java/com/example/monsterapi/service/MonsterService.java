@@ -57,7 +57,7 @@ public class MonsterService {
     // ── Experience ────────────────────────────────────────────────────
 
     public Monster gainExperience(String monsterId, String requesterUsername, int amount) {
-        Monster monster = getMonster(monsterId, requesterUsername);
+        Monster monster = getMonsterById(monsterId);
         monster.setExperience(monster.getExperience() + amount);
 
         while (monster.getExperience() >= monster.getExperienceThreshold()) {

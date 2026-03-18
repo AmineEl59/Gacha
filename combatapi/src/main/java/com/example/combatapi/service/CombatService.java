@@ -133,11 +133,18 @@ public class CombatService {
         if (m1.currentHp > 0 && m2.currentHp <= 0) {
             log.setWinnerId(m1.id);
             log.setWinnerOwner(m1.ownerUsername);
+            grantXp(m1.id, 100, authHeader);
+            grantXp(m2.id, 30, authHeader);
         } else if (m2.currentHp > 0 && m1.currentHp <= 0) {
             log.setWinnerId(m2.id);
             log.setWinnerOwner(m2.ownerUsername);
+            grantXp(m2.id, 100, authHeader);
+            grantXp(m1.id, 30, authHeader);
+        } else {
+            // Match nul ou timeout : 50 XP chacun
+            grantXp(m1.id, 50, authHeader);
+            grantXp(m2.id, 50, authHeader);
         }
-        // Si les deux sont morts ou timeout : pas de vainqueur (winnerId reste null)
 
         return combatLogRepository.save(log);
     }
@@ -152,6 +159,23 @@ public class CombatService {
         return combatLogRepository.findByCombatNumber(combatNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Combat " + combatNumber + " introuvable"));
+    }
+
+    // ── Attribution XP après combat ───────────────────────────────────
+
+    private void grantXp(String monsterId, int amount, String authHeader) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", authHeader);
+            headers.set("Content-Type", "application/json");
+            Map<String, Integer> body = Map.of("amount", amount);
+            HttpEntity<Map<String, Integer>> entity = new HttpEntity<>(body, headers);
+            restTemplate.exchange(
+                    monsterApiUrl + "/api/monsters/" + monsterId + "/experience",
+                    HttpMethod.POST, entity, Void.class);
+        } catch (Exception ignored) {
+            // Non bloquant : le combat est déjà enregistré
+        }
     }
 
     // ── Récupération du monstre depuis monsterapi ─────────────────────
