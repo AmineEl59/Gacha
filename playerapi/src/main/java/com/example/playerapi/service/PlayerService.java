@@ -120,6 +120,16 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    /** Rattache un monstre déjà existant (créé par invocationapi) au joueur. */
+    public Player linkMonster(String username, String monsterId) {
+        Player player = getProfile(username);
+        if (player.getMonsters().size() >= player.getMaxMonsters()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Monster list is full");
+        }
+        player.getMonsters().add(monsterId);
+        return playerRepository.save(player);
+    }
+
     public Player removeMonster(String username, String monsterId) {
         Player player = getProfile(username);
         if (!player.getMonsters().remove(monsterId)) {
