@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class InvocationServiceTest {
+class InvocationApiApplicationTests {
 
     @Mock private BaseMonsterRepository baseMonsterRepository;
     @Mock private InvocationRepository invocationRepository;
@@ -70,8 +70,8 @@ class InvocationServiceTest {
     }
 
     /**
-     * Test statistique principal — le cœur de l'API invocation.
-     * Vérifie que la distribution sur 10 000 tirages respecte les taux définis (±5%).
+     * Test statistique — vérifie que la distribution sur 10 000 tirages
+     * respecte les taux définis (±5%).
      */
     @Test
     void pickRandomMonster_distribution_matches_rates() {
@@ -97,14 +97,12 @@ class InvocationServiceTest {
 
     @Test
     void pickRandomMonster_rates_sum_less_than_100_returns_last() {
-        // If sum of rates < 100, the last monster must be returned as fallback
         List<BaseMonster> monsters = List.of(
                 monster("A", 0.0001),
                 monster("B", 0.0001)
         );
         when(baseMonsterRepository.findAll()).thenReturn(monsters);
 
-        // With near-zero rates, the fallback (last monster) should dominate
         long countB = 0;
         for (int i = 0; i < 1000; i++) {
             if ("B".equals(invocationService.pickRandomMonster().getName())) countB++;
@@ -123,10 +121,8 @@ class InvocationServiceTest {
         when(invocationRepository.findByStatusNot(InvocationStatus.COMPLETED))
                 .thenReturn(List.of(pending));
 
-        // replayAll catches exceptions from failing HTTP calls and returns remaining
-        List<Invocation> remaining = invocationService.replayAll("Bearer token");
+        invocationService.replayAll("Bearer token");
 
-        // verify it tried to process
         verify(invocationRepository, atLeastOnce()).findByStatusNot(InvocationStatus.COMPLETED);
     }
 

@@ -19,7 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class MonsterServiceTest {
+class MonsterApiApplicationTests {
 
     @Mock private MonsterRepository monsterRepository;
 
@@ -91,14 +91,14 @@ class MonsterServiceTest {
         when(monsterRepository.findById("id1")).thenReturn(Optional.of(monster));
 
         assertThrows(ResponseStatusException.class,
-                () -> monsterService.getMonster("id1", "bob")); // bob is not the owner
+                () -> monsterService.getMonster("id1", "bob"));
     }
 
     // ── gainExperience ────────────────────────────────────────────────
 
     @Test
     void gainExperience_below_threshold_no_levelup() {
-        Monster monster = buildMonster("id1", "alice"); // threshold 50
+        Monster monster = buildMonster("id1", "alice");
         when(monsterRepository.findById("id1")).thenReturn(Optional.of(monster));
         when(monsterRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -111,7 +111,7 @@ class MonsterServiceTest {
     @Test
     void gainExperience_levelup_increases_stats_and_grants_skill_point() {
         Monster monster = buildMonster("id1", "alice");
-        int initialHp = monster.getHp(); // 100
+        int initialHp = monster.getHp();
         when(monsterRepository.findById("id1")).thenReturn(Optional.of(monster));
         when(monsterRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -125,7 +125,7 @@ class MonsterServiceTest {
     @Test
     void gainExperience_multiple_levelups_stacks_stats() {
         Monster monster = buildMonster("id1", "alice");
-        int initialAtk = monster.getAtk(); // 50
+        int initialAtk = monster.getAtk();
         when(monsterRepository.findById("id1")).thenReturn(Optional.of(monster));
         when(monsterRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -133,7 +133,7 @@ class MonsterServiceTest {
         Monster result = monsterService.gainExperience("id1", "alice", 105);
 
         assertEquals(3, result.getLevel());
-        assertEquals(initialAtk + 10, result.getAtk()); // +5 per level, 2 levels
+        assertEquals(initialAtk + 10, result.getAtk());
         assertEquals(2, result.getSkillPoints());
     }
 
@@ -171,14 +171,13 @@ class MonsterServiceTest {
         when(monsterRepository.findById("id1")).thenReturn(Optional.of(monster));
 
         assertThrows(ResponseStatusException.class,
-                () -> monsterService.improveSkill("id1", "alice", 5)); // index out of range
+                () -> monsterService.improveSkill("id1", "alice", 5));
     }
 
     @Test
     void improveSkill_at_max_level_throws() {
         Monster monster = buildMonster("id1", "alice");
         monster.setSkillPoints(1);
-        // Set skill to max improvement level
         monster.getSkills().get(0).setImprovementLevel(5);
         monster.getSkills().get(0).setMaxImprovementLevel(5);
         when(monsterRepository.findById("id1")).thenReturn(Optional.of(monster));

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CombatServiceTest {
+class CombatApiApplicationTests {
 
     @Mock private CombatLogRepository combatLogRepository;
 
@@ -85,10 +85,8 @@ class CombatServiceTest {
 
     @Test
     void combat_number_increments_with_existing_count() {
-        // When 3 combats already exist, next number is 4
         when(combatLogRepository.count()).thenReturn(3L);
 
-        // We just verify count() is used correctly — simulate without HTTP
         long nextNumber = combatLogRepository.count() + 1;
         assertEquals(4L, nextNumber);
     }
