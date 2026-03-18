@@ -1,10 +1,6 @@
 package com.example.playerapi;
 
-import com.example.playerapi.dto.CreateMonsterRequest;
-import com.example.playerapi.model.ElementType;
-import com.example.playerapi.model.Monster;
 import com.example.playerapi.model.Player;
-import com.example.playerapi.repository.MonsterRepository;
 import com.example.playerapi.repository.PlayerRepository;
 import com.example.playerapi.service.PlayerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,13 +20,12 @@ import static org.mockito.Mockito.*;
 class PlayerapiApplicationTests {
 
     @Mock private PlayerRepository playerRepository;
-    @Mock private MonsterRepository monsterRepository;
 
     private PlayerService playerService;
 
     @BeforeEach
     void setUp() {
-        playerService = new PlayerService(playerRepository, monsterRepository);
+        playerService = new PlayerService(playerRepository, "http://mock-monster-api");
     }
 
     // ── createPlayer ──────────────────────────────────────────────────
@@ -134,41 +129,29 @@ class PlayerapiApplicationTests {
         assertThrows(ResponseStatusException.class, () -> playerService.levelUp("alice"));
     }
 
-    // ── addMonster ────────────────────────────────────────────────────
+    // ── linkMonster ───────────────────────────────────────────────────
 
     @Test
-    void addMonster_adds_id_to_player() {
+    void linkMonster_adds_id_to_player() {
         Player player = new Player("alice");
-        Monster monster = new Monster("alice", ElementType.FIRE, 100, 50, 30, 20);
-        monster.setId("monster-id-123");
-
         when(playerRepository.findByUsername("alice")).thenReturn(Optional.of(player));
-        when(monsterRepository.save(any())).thenReturn(monster);
         when(playerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CreateMonsterRequest req = new CreateMonsterRequest();
-        req.setElementType(ElementType.FIRE);
-        req.setHp(100); req.setAtk(50); req.setDef(30); req.setVit(20);
-
-        Player result = playerService.addMonster("alice", req);
+        Player result = playerService.linkMonster("alice", "monster-id-123");
 
         assertTrue(result.getMonsters().contains("monster-id-123"));
         assertEquals(1, result.getMonsters().size());
     }
 
     @Test
-    void addMonster_full_list_throws() {
+    void linkMonster_full_list_throws() {
         Player player = new Player("alice");
         player.setMaxMonsters(1);
         player.getMonsters().add("existing-monster");
         when(playerRepository.findByUsername("alice")).thenReturn(Optional.of(player));
 
-        CreateMonsterRequest req = new CreateMonsterRequest();
-        req.setElementType(ElementType.FIRE);
-        req.setHp(100); req.setAtk(50); req.setDef(30); req.setVit(20);
-
         assertThrows(ResponseStatusException.class,
-                () -> playerService.addMonster("alice", req));
+                () -> playerService.linkMonster("alice", "new-monster"));
     }
 
     // ── xp threshold formula ──────────────────────────────────────────
@@ -180,7 +163,6 @@ class PlayerapiApplicationTests {
         when(playerRepository.findByUsername("alice")).thenReturn(Optional.of(player));
         when(playerRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        // Level up once → threshold becomes 50 * 1.1^1 = 55
         Player lvl1 = playerService.gainExperience("alice", 50);
         assertEquals(1, lvl1.getLevel());
         assertEquals(55, lvl1.getExperienceThreshold());
