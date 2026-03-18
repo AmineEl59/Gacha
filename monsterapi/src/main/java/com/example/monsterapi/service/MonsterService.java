@@ -1,8 +1,9 @@
-package com.example.playerapi.service;
+package com.example.monsterapi.service;
 
-import com.example.playerapi.model.Monster;
-import com.example.playerapi.model.Skill;
-import com.example.playerapi.repository.MonsterRepository;
+import com.example.monsterapi.dto.CreateMonsterRequest;
+import com.example.monsterapi.model.Monster;
+import com.example.monsterapi.model.Skill;
+import com.example.monsterapi.repository.MonsterRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,13 +17,18 @@ public class MonsterService {
         this.monsterRepository = monsterRepository;
     }
 
-    // ── Threshold formula (same as player) ──────────────────────────
     private int computeThreshold(int level) {
         if (level <= 1) return 50;
         return (int) Math.round(50 * Math.pow(1.1, level - 1));
     }
 
-    // ── Queries ───────────────────────────────────────────────────────
+    // ── CRUD ──────────────────────────────────────────────────────────
+
+    public Monster createMonster(String ownerUsername, CreateMonsterRequest req) {
+        Monster monster = new Monster(ownerUsername, req.getElementType(),
+                req.getHp(), req.getAtk(), req.getDef(), req.getVit());
+        return monsterRepository.save(monster);
+    }
 
     public Monster getMonster(String monsterId, String requesterUsername) {
         Monster monster = monsterRepository.findById(monsterId)
@@ -33,9 +39,17 @@ public class MonsterService {
         return monster;
     }
 
+    public void deleteMonster(String monsterId, String requesterUsername) {
+        Monster monster = monsterRepository.findById(monsterId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Monster not found"));
+        if (!monster.getOwnerUsername().equals(requesterUsername)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+        monsterRepository.deleteById(monsterId);
+    }
+
     // ── Experience ────────────────────────────────────────────────────
 
-    /** Give XP to a monster; cascade level-ups. Each level gained: stats +5, +1 skillPoint. */
     public Monster gainExperience(String monsterId, String requesterUsername, int amount) {
         Monster monster = getMonster(monsterId, requesterUsername);
         monster.setExperience(monster.getExperience() + amount);
@@ -52,7 +66,6 @@ public class MonsterService {
         monster.setLevel(monster.getLevel() + 1);
         monster.setExperienceThreshold(computeThreshold(monster.getLevel()));
         monster.setSkillPoints(monster.getSkillPoints() + 1);
-        // Stat increase per level
         monster.setHp(monster.getHp() + 5);
         monster.setAtk(monster.getAtk() + 5);
         monster.setDef(monster.getDef() + 5);
@@ -61,7 +74,6 @@ public class MonsterService {
 
     // ── Skill improvement ─────────────────────────────────────────────
 
-    /** Spend one skill point to improve a skill at the given index. */
     public Monster improveSkill(String monsterId, String requesterUsername, int skillIndex) {
         Monster monster = getMonster(monsterId, requesterUsername);
 
@@ -78,7 +90,6 @@ public class MonsterService {
         }
 
         skill.setImprovementLevel(skill.getImprovementLevel() + 1);
-        // Each improvement boosts base damage by 2
         skill.setBaseDamage(skill.getBaseDamage() + 2);
         monster.setSkillPoints(monster.getSkillPoints() - 1);
 
