@@ -1,84 +1,500 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Gacha - Invocation</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-        input { display: block; margin: 8px 0; padding: 8px; width: 100%; box-sizing: border-box; }
-        button { padding: 10px 20px; margin: 8px 4px; cursor: pointer; }
-        #result { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 4px; display: none; }
-        #error { color: red; margin-top: 10px; }
-        .stat { margin: 4px 0; }
-    </style>
+<meta charset="UTF-8">
+<title>Gacha Game</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+
+  /* ── Login ── */
+  #loginSection {
+    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+  }
+  .login-box {
+    background: #16213e; padding: 40px; border-radius: 12px; width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .login-box h1 { text-align: center; margin-bottom: 24px; color: #e94560; font-size: 2rem; }
+
+  /* ── App ── */
+  #appSection { display: none; }
+  header {
+    background: #16213e; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #e94560;
+  }
+  header h2 { color: #e94560; }
+  #userInfo { font-size: 0.9rem; color: #aaa; }
+
+  nav { background: #0f3460; display: flex; }
+  nav button {
+    flex: 1; padding: 14px; background: none; border: none; color: #aaa;
+    cursor: pointer; font-size: 1rem; border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  nav button:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  nav button.active { color: #e94560; border-bottom-color: #e94560; }
+
+  .tab { display: none; padding: 24px; max-width: 960px; margin: 0 auto; }
+  .tab.active { display: block; }
+
+  /* ── Forms ── */
+  input, select {
+    width: 100%; padding: 10px 12px; margin: 8px 0; border-radius: 6px;
+    border: 1px solid #334; background: #0f1923; color: #eee; font-size: 0.95rem;
+  }
+  input:focus, select:focus { outline: none; border-color: #e94560; }
+
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 0.95rem; font-weight: bold; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #e94560; color: #fff; width: 100%; margin-top: 8px; }
+  .btn-secondary { background: #0f3460; color: #fff; }
+  .btn-small { padding: 6px 14px; font-size: 0.85rem; }
+
+  /* ── Cards ── */
+  .card {
+    background: #16213e; border-radius: 10px; padding: 20px; margin-bottom: 16px;
+    border: 1px solid #223;
+  }
+  .card h3 { color: #e94560; margin-bottom: 12px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;
+    margin-top: 10px;
+  }
+  .stat-box {
+    background: #0f3460; border-radius: 8px; padding: 10px; text-align: center;
+  }
+  .stat-box .label { font-size: 0.75rem; color: #aaa; }
+  .stat-box .value { font-size: 1.3rem; font-weight: bold; color: #fff; }
+
+  .xp-bar-bg {
+    background: #0f1923; border-radius: 4px; height: 10px; margin: 8px 0; overflow: hidden;
+  }
+  .xp-bar { background: #e94560; height: 100%; transition: width 0.4s; }
+
+  .monster-card {
+    background: #16213e; border: 1px solid #334; border-radius: 10px;
+    padding: 16px; margin-bottom: 12px;
+  }
+  .monster-card h4 { color: #fff; margin-bottom: 8px; }
+  .element-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem;
+    font-weight: bold; margin-left: 8px;
+  }
+  .FIRE { background: #c0392b; } .WATER { background: #2980b9; }
+  .WIND { background: #27ae60; } .EARTH { background: #8e6b3e; }
+  .LIGHTNING { background: #f39c12; color: #000; }
+
+  .skill-list { margin-top: 8px; }
+  .skill-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid #334; font-size: 0.9rem;
+  }
+  .skill-item:last-child { border-bottom: none; }
+
+  .invoc-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: #0f1923; border-radius: 8px; margin-bottom: 8px;
+  }
+  .status-badge {
+    padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;
+  }
+  .COMPLETED { background: #27ae60; } .PENDING { background: #f39c12; color: #000; }
+  .MONSTER_CREATED { background: #2980b9; }
+
+  .combat-result { margin-top: 16px; }
+  .combat-log {
+    background: #0f1923; border-radius: 8px; padding: 12px; max-height: 300px;
+    overflow-y: auto; font-size: 0.85rem; line-height: 1.6;
+  }
+  .turn-header { color: #e94560; font-weight: bold; margin-top: 8px; }
+  .turn-action { color: #ccc; padding-left: 12px; }
+
+  .combat-history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: #0f1923; border-radius: 8px; margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .combat-history-item:hover { background: #162033; }
+
+  .error { color: #e94560; margin-top: 8px; font-size: 0.9rem; }
+  .success { color: #27ae60; margin-top: 8px; font-size: 0.9rem; }
+  .loading { color: #aaa; font-style: italic; }
+
+  .section-title {
+    font-size: 1.3rem; font-weight: bold; margin-bottom: 16px; color: #e94560;
+    border-bottom: 1px solid #334; padding-bottom: 8px;
+  }
+  .row { display: flex; gap: 16px; }
+  .row > * { flex: 1; }
+</style>
 </head>
 <body>
 
-<h1>Invocation de monstre</h1>
-
-<div>
-    <input type="text" id="token" placeholder="Token d'authentification (Bearer ...)">
-    <button onclick="invoquer()">Invoquer un monstre</button>
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════ -->
+<div id="loginSection">
+  <div class="login-box">
+    <h1>🎮 Gacha</h1>
+    <input type="text" id="loginUsername" placeholder="Nom d'utilisateur">
+    <input type="password" id="loginPassword" placeholder="Mot de passe">
+    <button class="btn btn-primary" onclick="login()">Connexion</button>
+    <div id="loginError" class="error"></div>
+  </div>
 </div>
 
-<div id="error"></div>
+<!-- ══ APP ════════════════════════════════════════════════════════════ -->
+<div id="appSection">
+  <header>
+    <h2>🎮 Gacha Game</h2>
+    <div id="userInfo"></div>
+  </header>
+  <nav>
+    <button class="active" onclick="showTab('profil')">👤 Profil</button>
+    <button onclick="showTab('invocations')">✨ Invocations</button>
+    <button onclick="showTab('monstres')">🐉 Monstres</button>
+    <button onclick="showTab('combats')">⚔️ Combats</button>
+  </nav>
 
-<div id="result">
-    <h2>Monstre invoqué !</h2>
-    <div class="stat"><strong>Nom :</strong> <span id="nom"></span></div>
-    <div class="stat"><strong>Type :</strong> <span id="type"></span></div>
-    <div class="stat"><strong>HP :</strong> <span id="hp"></span></div>
-    <div class="stat"><strong>ATK :</strong> <span id="atk"></span></div>
-    <div class="stat"><strong>DEF :</strong> <span id="def"></span></div>
-    <div class="stat"><strong>VIT :</strong> <span id="vit"></span></div>
-    <div class="stat"><strong>ID monstre :</strong> <span id="monsterId"></span></div>
-    <div class="stat"><strong>Statut :</strong> <span id="status"></span></div>
+  <!-- ── PROFIL ── -->
+  <div id="tabProfil" class="tab active">
+    <div class="section-title">Mon Profil</div>
+    <div id="profilContent" class="loading">Chargement...</div>
+  </div>
+
+  <!-- ── INVOCATIONS ── -->
+  <div id="tabInvocations" class="tab">
+    <div class="section-title">Invocations</div>
+    <div class="card">
+      <h3>Invoquer un monstre</h3>
+      <button class="btn btn-primary" onclick="invoquer()">✨ Invoquer</button>
+      <div id="invocResult"></div>
+    </div>
+    <div class="section-title" style="margin-top:24px">Historique</div>
+    <div id="invocHistory" class="loading">Chargement...</div>
+  </div>
+
+  <!-- ── MONSTRES ── -->
+  <div id="tabMonstres" class="tab">
+    <div class="section-title">Mes Monstres</div>
+    <div id="monstresContent" class="loading">Chargement...</div>
+  </div>
+
+  <!-- ── COMBATS ── -->
+  <div id="tabCombats" class="tab">
+    <div class="section-title">Lancer un combat</div>
+    <div class="card">
+      <h3>Choisir les combattants</h3>
+      <div class="row">
+        <div>
+          <label style="color:#aaa;font-size:0.9rem">Monstre 1</label>
+          <select id="combatM1"></select>
+        </div>
+        <div>
+          <label style="color:#aaa;font-size:0.9rem">Monstre 2</label>
+          <select id="combatM2"></select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="lancerCombat()" style="margin-top:12px">⚔️ Combattre</button>
+      <div id="combatResult"></div>
+    </div>
+    <div class="section-title" style="margin-top:24px">Historique des combats</div>
+    <div id="combatHistory" class="loading">Chargement...</div>
+  </div>
 </div>
 
 <script>
-    async function invoquer() {
-        const token = document.getElementById('token').value.trim();
-        const errorDiv = document.getElementById('error');
-        const resultDiv = document.getElementById('result');
+const AUTH    = 'http://localhost:8080';
+const PLAYER  = 'http://localhost:8081';
+const MONSTER = 'http://localhost:8082';
+const COMBAT  = 'http://localhost:8084';
 
-        errorDiv.textContent = '';
-        resultDiv.style.display = 'none';
+let token = null;
+let username = null;
+let myMonsters = []; // [{id, name, elementType, ...}]
 
-        if (!token) {
-            errorDiv.textContent = 'Veuillez entrer un token.';
-            return;
-        }
+// ══ Utilitaires ═══════════════════════════════════════════════════════
 
-        try {
-            const response = await fetch('/api/invocations', {
-                method: 'POST',
-                headers: {
-                    'Authorization': token.startsWith('Bearer ') ? token : 'Bearer ' + token
-                }
-            });
+function api(url, method = 'GET', body = null, needAuth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (needAuth && token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(url, { method, headers, body: body ? JSON.stringify(body) : null })
+    .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.message || r.status)));
+}
 
-            if (!response.ok) {
-                errorDiv.textContent = 'Erreur ' + response.status + ' : ' + await response.text();
-                return;
-            }
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'profil')      loadProfil();
+  if (name === 'invocations') loadInvocations();
+  if (name === 'monstres')    loadMonstres();
+  if (name === 'combats')     loadCombats();
+}
 
-            const invocation = await response.json();
+// ══ Auth ══════════════════════════════════════════════════════════════
 
-            document.getElementById('nom').textContent = invocation.baseMonsterName;
-            document.getElementById('type').textContent = invocation.elementType;
-            document.getElementById('hp').textContent = invocation.hp;
-            document.getElementById('atk').textContent = invocation.atk;
-            document.getElementById('def').textContent = invocation.def;
-            document.getElementById('vit').textContent = invocation.vit;
-            document.getElementById('monsterId').textContent = invocation.monsterId;
-            document.getElementById('status').textContent = invocation.status;
+async function login() {
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value.trim();
+  document.getElementById('loginError').textContent = '';
+  if (!u || !p) { document.getElementById('loginError').textContent = 'Remplis tous les champs.'; return; }
+  try {
+    const data = await api(`${AUTH}/api/auth/login`, 'POST', { username: u, password: p }, false);
+    token = data.token;
+    username = u;
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('appSection').style.display = 'block';
+    document.getElementById('userInfo').textContent = '👤 ' + username;
+    loadProfil();
+  } catch (e) {
+    document.getElementById('loginError').textContent = 'Identifiants incorrects.';
+  }
+}
 
-            resultDiv.style.display = 'block';
-        } catch (e) {
-            errorDiv.textContent = 'Erreur réseau : ' + e.message;
-        }
-    }
+// ══ Profil ════════════════════════════════════════════════════════════
+
+async function loadProfil() {
+  const el = document.getElementById('profilContent');
+  el.innerHTML = '<span class="loading">Chargement...</span>';
+  try {
+    const player = await api(`${PLAYER}/api/players/${username}`);
+    const xpPct = Math.min(100, Math.round(player.experience / player.experienceThreshold * 100));
+    el.innerHTML = `
+      <div class="card">
+        <h3>${username}</h3>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="label">Niveau</div><div class="value">${player.level}</div></div>
+          <div class="stat-box"><div class="label">XP</div><div class="value">${player.experience}/${player.experienceThreshold}</div></div>
+          <div class="stat-box"><div class="label">Monstres</div><div class="value">${player.monsters.length}/${player.maxMonsters}</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:0.85rem;color:#aaa">Progression XP</div>
+          <div class="xp-bar-bg"><div class="xp-bar" style="width:${xpPct}%"></div></div>
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:16px">Mes monstres (${player.monsters.length})</div>
+      <div id="profilMonsters"><span class="loading">Chargement des monstres...</span></div>
+    `;
+    loadProfilMonsters(player.monsters);
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur : ${e}</div>`;
+  }
+}
+
+async function loadProfilMonsters(ids) {
+  const el = document.getElementById('profilMonsters');
+  if (!ids || ids.length === 0) { el.innerHTML = '<div style="color:#aaa">Aucun monstre. Lance une invocation !</div>'; return; }
+  try {
+    const monsters = await Promise.all(ids.map(id => api(`${MONSTER}/api/monsters/${id}`)));
+    myMonsters = monsters;
+    el.innerHTML = monsters.map(m => monsterCardHtml(m, false)).join('');
+    updateCombatSelects();
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur chargement monstres.</div>`;
+  }
+}
+
+// ══ Invocations ═══════════════════════════════════════════════════════
+
+async function invoquer() {
+  const el = document.getElementById('invocResult');
+  el.innerHTML = '<span class="loading">Invocation en cours...</span>';
+  try {
+    const inv = await api('/api/invocations', 'POST');
+    el.innerHTML = `
+      <div class="card" style="margin-top:12px">
+        <h3>✨ ${inv.baseMonsterName} invoqué !</h3>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="label">Type</div><div class="value">${inv.elementType}</div></div>
+          <div class="stat-box"><div class="label">HP</div><div class="value">${inv.hp}</div></div>
+          <div class="stat-box"><div class="label">ATK</div><div class="value">${inv.atk}</div></div>
+          <div class="stat-box"><div class="label">DEF</div><div class="value">${inv.def}</div></div>
+          <div class="stat-box"><div class="label">VIT</div><div class="value">${inv.vit}</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:0.85rem;color:#aaa">
+          Statut : <span class="status-badge ${inv.status}">${inv.status}</span>
+        </div>
+      </div>
+    `;
+    loadInvocations();
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur : ${e}</div>`;
+  }
+}
+
+async function loadInvocations() {
+  const el = document.getElementById('invocHistory');
+  try {
+    const list = await api('/api/invocations');
+    if (list.length === 0) { el.innerHTML = '<div style="color:#aaa">Aucune invocation.</div>'; return; }
+    el.innerHTML = [...list].reverse().map(inv => `
+      <div class="invoc-item">
+        <div>
+          <strong>${inv.baseMonsterName}</strong>
+          <span class="element-badge ${inv.elementType}">${inv.elementType}</span>
+        </div>
+        <div style="font-size:0.85rem;color:#aaa">
+          HP:${inv.hp} ATK:${inv.atk} DEF:${inv.def} VIT:${inv.vit}
+        </div>
+        <span class="status-badge ${inv.status}">${inv.status}</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur chargement historique.</div>`;
+  }
+}
+
+// ══ Monstres ══════════════════════════════════════════════════════════
+
+async function loadMonstres() {
+  const el = document.getElementById('monstresContent');
+  el.innerHTML = '<span class="loading">Chargement...</span>';
+  try {
+    const ids = await api(`${PLAYER}/api/players/${username}/monsters`);
+    if (!ids || ids.length === 0) { el.innerHTML = '<div style="color:#aaa">Aucun monstre. Lance une invocation !</div>'; return; }
+    const monsters = await Promise.all(ids.map(id => api(`${MONSTER}/api/monsters/${id}`)));
+    myMonsters = monsters;
+    updateCombatSelects();
+    el.innerHTML = monsters.map(m => monsterCardHtml(m, true)).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur : ${e}</div>`;
+  }
+}
+
+function monsterCardHtml(m, withActions) {
+  const skills = (m.skills || []).map((s, i) => `
+    <div class="skill-item">
+      <span>Compétence ${i+1}</span>
+      <span style="color:#aaa">DMG: ${s.baseDamage} | ${s.statType} x${s.statRatio} | CD: ${s.cooldown}</span>
+      <span style="color:#e94560">Niv. ${s.improvementLevel}/${s.maxImprovementLevel}</span>
+      ${withActions && m.skillPoints > 0 ? `<button class="btn btn-small btn-secondary" onclick="ameliorerSkill('${m.id}',${i})">⬆ Améliorer</button>` : ''}
+    </div>
+  `).join('');
+
+  return `
+    <div class="monster-card" id="monster-${m.id}">
+      <h4>
+        ${m.ownerUsername === username ? '🐉' : '👾'}
+        Niveau ${m.level}
+        <span class="element-badge ${m.elementType}">${m.elementType}</span>
+        ${m.skillPoints > 0 ? `<span style="color:#f39c12;font-size:0.85rem">  ✦ ${m.skillPoints} point(s) de compétence</span>` : ''}
+      </h4>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="label">HP</div><div class="value">${m.hp}</div></div>
+        <div class="stat-box"><div class="label">ATK</div><div class="value">${m.atk}</div></div>
+        <div class="stat-box"><div class="label">DEF</div><div class="value">${m.def}</div></div>
+        <div class="stat-box"><div class="label">VIT</div><div class="value">${m.vit}</div></div>
+        <div class="stat-box"><div class="label">XP</div><div class="value">${m.experience}/${m.experienceThreshold}</div></div>
+      </div>
+      <div class="skill-list">${skills}</div>
+      ${withActions ? `
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-small btn-secondary" onclick="donnerXP('${m.id}', 50)">+50 XP</button>
+          <button class="btn btn-small btn-secondary" onclick="donnerXP('${m.id}', 100)">+100 XP</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+async function donnerXP(monsterId, amount) {
+  try {
+    await api(`${MONSTER}/api/monsters/${monsterId}/experience`, 'POST', { amount });
+    loadMonstres();
+  } catch (e) { alert('Erreur XP : ' + e); }
+}
+
+async function ameliorerSkill(monsterId, skillIndex) {
+  try {
+    await api(`${MONSTER}/api/monsters/${monsterId}/skills/${skillIndex}/improve`, 'POST');
+    loadMonstres();
+  } catch (e) { alert('Erreur amélioration : ' + e); }
+}
+
+// ══ Combats ═══════════════════════════════════════════════════════════
+
+function updateCombatSelects() {
+  const opts = myMonsters.map(m =>
+    `<option value="${m.id}">Niv.${m.level} ${m.elementType} (HP:${m.hp} ATK:${m.atk})</option>`
+  ).join('');
+  document.getElementById('combatM1').innerHTML = opts;
+  document.getElementById('combatM2').innerHTML = opts;
+}
+
+async function lancerCombat() {
+  const m1 = document.getElementById('combatM1').value;
+  const m2 = document.getElementById('combatM2').value;
+  const el = document.getElementById('combatResult');
+  el.innerHTML = '<span class="loading">Combat en cours...</span>';
+  try {
+    const log = await api(`${COMBAT}/api/combats`, 'POST', { monster1Id: m1, monster2Id: m2 });
+    el.innerHTML = combatLogHtml(log);
+    loadCombatHistory();
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur : ${e}</div>`;
+  }
+}
+
+function combatLogHtml(log) {
+  const winner = log.winnerId
+    ? `🏆 Gagnant : <strong>${log.winnerOwner}</strong> (monstre ${log.winnerId})`
+    : '⚖️ Match nul — les deux monstres sont tombés';
+
+  const turns = (log.turns || []).map(t => `
+    <div class="turn-header">Tour ${t.turnNumber}</div>
+    ${(t.actions || []).map(a => `<div class="turn-action">→ ${a}</div>`).join('')}
+  `).join('');
+
+  return `
+    <div class="combat-result">
+      <div class="card">
+        <h3>Combat #${log.combatNumber}</h3>
+        <p style="margin-bottom:10px">${winner}</p>
+        <div class="combat-log">${turns}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCombats() {
+  updateCombatSelects();
+  loadCombatHistory();
+}
+
+async function loadCombatHistory() {
+  const el = document.getElementById('combatHistory');
+  try {
+    const list = await api(`${COMBAT}/api/combats`);
+    if (list.length === 0) { el.innerHTML = '<div style="color:#aaa">Aucun combat.</div>'; return; }
+    el.innerHTML = [...list].reverse().map(log => `
+      <div class="combat-history-item" onclick="voirCombat(${log.combatNumber})">
+        <div>
+          <strong>Combat #${log.combatNumber}</strong>
+          <span style="color:#aaa;font-size:0.85rem;margin-left:8px">${log.turns ? log.turns.length : 0} tours</span>
+        </div>
+        <div style="font-size:0.85rem">
+          ${log.winnerId ? `🏆 ${log.winnerOwner}` : '⚖️ Nul'}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="error">Erreur chargement historique.</div>`;
+  }
+}
+
+async function voirCombat(combatNumber) {
+  try {
+    const log = await api(`${COMBAT}/api/combats/${combatNumber}`);
+    document.getElementById('combatResult').innerHTML = combatLogHtml(log);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) { alert('Erreur : ' + e); }
+}
 </script>
-
 </body>
 </html>
