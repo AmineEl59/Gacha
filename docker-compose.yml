@@ -1,4 +1,5 @@
 services:
+
   mongodb:
     image: mongo:7
     container_name: projetapi-mongo
@@ -7,6 +8,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+      - ./data/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
 
   authapi:
     build: ./authapi
@@ -16,6 +18,48 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+
+  playerapi:
+    build: ./playerapi
+    container_name: playerapi-app
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - AUTH_API_URL=http://authapi:8080
+      - MONSTER_API_URL=http://monsterapi:8082
+    depends_on:
+      - mongodb
+      - authapi
+      - monsterapi
+
+  monsterapi:
+    build: ./monsterapi
+    container_name: monsterapi-app
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - AUTH_API_URL=http://authapi:8080
+    depends_on:
+      - mongodb
+      - authapi
+
+  invocationapi:
+    build: ./invocationapi
+    container_name: invocationapi-app
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - AUTH_API_URL=http://authapi:8080
+      - MONSTER_API_URL=http://monsterapi:8082
+      - PLAYER_API_URL=http://playerapi:8081
+    depends_on:
+      - mongodb
+      - authapi
+      - monsterapi
+      - playerapi
 
 volumes:
   mongo-data:
