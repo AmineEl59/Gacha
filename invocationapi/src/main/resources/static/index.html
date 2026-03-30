@@ -122,6 +122,8 @@
   }
   .combat-history-item:hover { background: #162033; }
 
+  .btn-mode-active { background: #e94560 !important; color: #fff !important; }
+
   .error { color: #e94560; margin-top: 8px; font-size: 0.9rem; }
   .success { color: #27ae60; margin-top: 8px; font-size: 0.9rem; }
   .loading { color: #aaa; font-style: italic; }
@@ -188,14 +190,27 @@
   <div id="tabCombats" class="tab">
     <div class="section-title">Lancer un combat</div>
     <div class="card">
-      <h3>Choisir les combattants</h3>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button id="btnModeSolo" class="btn btn-primary btn-small" onclick="setCombatMode('solo')" style="flex:1">⚔️ Duel personnel</button>
+        <button id="btnModePvp" class="btn btn-secondary btn-small" onclick="setCombatMode('pvp')" style="flex:1">🌐 PvP</button>
+      </div>
+
+      <div id="pvpOpponentSection" style="display:none;margin-bottom:14px">
+        <label style="color:#aaa;font-size:0.9rem">Nom du joueur adverse</label>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <input type="text" id="opponentUsername" placeholder="ex: bob" style="margin:0">
+          <button class="btn btn-secondary btn-small" onclick="chargerAdversaire()" style="width:auto;white-space:nowrap">Chercher</button>
+        </div>
+        <div id="opponentStatus" style="font-size:0.85rem;margin-top:6px"></div>
+      </div>
+
       <div class="row">
         <div>
-          <label style="color:#aaa;font-size:0.9rem">Monstre 1</label>
+          <label style="color:#aaa;font-size:0.9rem" id="labelM1">Ton monstre</label>
           <select id="combatM1"></select>
         </div>
         <div>
-          <label style="color:#aaa;font-size:0.9rem">Monstre 2</label>
+          <label style="color:#aaa;font-size:0.9rem" id="labelM2">Monstre 2</label>
           <select id="combatM2"></select>
         </div>
       </div>
@@ -215,7 +230,9 @@ const COMBAT  = 'http://localhost:8084';
 
 let token = null;
 let username = null;
-let myMonsters = []; // [{id, name, elementType, ...}]
+let myMonsters = [];
+let opponentMonsters = [];
+let combatMode = 'solo'; // 'solo' | 'pvp'
 
 // ══ Utilitaires ═══════════════════════════════════════════════════════
 
@@ -223,7 +240,13 @@ function api(url, method = 'GET', body = null, needAuth = true) {
   const headers = { 'Content-Type': 'application/json' };
   if (needAuth && token) headers['Authorization'] = 'Bearer ' + token;
   return fetch(url, { method, headers, body: body ? JSON.stringify(body) : null })
-    .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.message || r.status)));
+    .then(r => {
+      if (r.ok) return r.json();
+      return r.text().then(text => {
+        try { const e = JSON.parse(text); return Promise.reject(e.message || r.status); }
+        catch { return Promise.reject(r.status); }
+      });
+    });
 }
 
 function showTab(name) {
@@ -239,6 +262,29 @@ function showTab(name) {
 
 // ══ Auth ══════════════════════════════════════════════════════════════
 
+function startSession(t, u) {
+  token = t;
+  username = u;
+  localStorage.setItem('token', t);
+  localStorage.setItem('username', u);
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('appSection').style.display = 'block';
+  document.getElementById('userInfo').innerHTML = `👤 ${username} <button onclick="logout()" style="margin-left:12px;background:none;border:1px solid #555;color:#aaa;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem">Déconnexion</button>`;
+  loadProfil();
+}
+
+function logout() {
+  token = null;
+  username = null;
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  document.getElementById('appSection').style.display = 'none';
+  document.getElementById('loginSection').style.display = 'flex';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
 async function login() {
   const u = document.getElementById('loginUsername').value.trim();
   const p = document.getElementById('loginPassword').value.trim();
@@ -246,12 +292,7 @@ async function login() {
   if (!u || !p) { document.getElementById('loginError').textContent = 'Remplis tous les champs.'; return; }
   try {
     const data = await api(`${AUTH}/api/auth/login`, 'POST', { username: u, password: p }, false);
-    token = data.token;
-    username = u;
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('appSection').style.display = 'block';
-    document.getElementById('userInfo').textContent = '👤 ' + username;
-    loadProfil();
+    startSession(data.token, u);
   } catch (e) {
     const msg = (e instanceof TypeError)
       ? 'Impossible de contacter le serveur. Vérifie que Docker tourne et que les services sont démarrés.'
@@ -259,6 +300,23 @@ async function login() {
     document.getElementById('loginError').textContent = msg;
   }
 }
+
+// Restaurer la session au chargement de la page
+(async function restoreSession() {
+  const savedToken = localStorage.getItem('token');
+  const savedUsername = localStorage.getItem('username');
+  if (!savedToken || !savedUsername) return;
+  try {
+    // Vérifier que le token est encore valide
+    await fetch(`${AUTH}/api/auth/validate`, {
+      headers: { 'Authorization': 'Bearer ' + savedToken }
+    }).then(r => { if (!r.ok) throw new Error('invalid'); });
+    startSession(savedToken, savedUsername);
+  } catch {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+  }
+})();
 
 // ══ Profil ════════════════════════════════════════════════════════════
 
@@ -324,7 +382,7 @@ async function loadProfilMonsters(ids) {
   try {
     const monsters = await Promise.all(ids.map(id => api(`${MONSTER}/api/monsters/${id}`)));
     myMonsters = monsters;
-    el.innerHTML = monsters.map(m => monsterCardHtml(m, false)).join('');
+    el.innerHTML = monsters.map(m => monsterCardHtml(m, true, 'profil')).join('');
     updateCombatSelects();
   } catch (e) {
     el.innerHTML = `<div class="error">Erreur chargement monstres.</div>`;
@@ -392,19 +450,19 @@ async function loadMonstres() {
     const monsters = await Promise.all(ids.map(id => api(`${MONSTER}/api/monsters/${id}`)));
     myMonsters = monsters;
     updateCombatSelects();
-    el.innerHTML = monsters.map(m => monsterCardHtml(m, true)).join('');
+    el.innerHTML = monsters.map(m => monsterCardHtml(m, true, 'monstres')).join('');
   } catch (e) {
     el.innerHTML = `<div class="error">Erreur : ${e}</div>`;
   }
 }
 
-function monsterCardHtml(m, withActions) {
+function monsterCardHtml(m, withActions, source = 'monstres') {
   const skills = (m.skills || []).map((s, i) => `
     <div class="skill-item">
       <span>Compétence ${i+1}</span>
       <span style="color:#aaa">DMG: ${s.baseDamage} | ${s.statType} x${s.statRatio} | CD: ${s.cooldown}</span>
       <span style="color:#e94560">Niv. ${s.improvementLevel}/${s.maxImprovementLevel}</span>
-      ${withActions && m.skillPoints > 0 && s.improvementLevel < s.maxImprovementLevel ? `<button class="btn btn-small btn-secondary" onclick="ameliorerSkill('${m.id}',${i})">⬆ Améliorer</button>` : ''}
+      ${withActions && m.skillPoints > 0 && s.improvementLevel < s.maxImprovementLevel ? `<button class="btn btn-small btn-secondary" onclick="ameliorerSkill('${m.id}',${i},'${source}')">⬆ Améliorer</button>` : ''}
     </div>
   `).join('');
 
@@ -442,10 +500,11 @@ async function donnerXP(monsterId, amount) {
   } catch (e) { alert('Erreur XP : ' + e); }
 }
 
-async function ameliorerSkill(monsterId, skillIndex) {
+async function ameliorerSkill(monsterId, skillIndex, source = 'monstres') {
   try {
     await api(`${MONSTER}/api/monsters/${monsterId}/skills/${skillIndex}/improve`, 'POST');
-    loadMonstres();
+    if (source === 'profil') loadProfil();
+    else loadMonstres();
   } catch (e) { alert('Erreur amélioration : ' + e); }
 }
 
@@ -464,11 +523,53 @@ async function supprimerMonstre(monsterId) {
 // ══ Combats ═══════════════════════════════════════════════════════════
 
 function updateCombatSelects() {
-  const opts = myMonsters.map(m =>
+  const myOpts = myMonsters.map(m =>
     `<option value="${m.id}">Niv.${m.level} ${m.elementType} (HP:${m.hp} ATK:${m.atk})</option>`
   ).join('');
-  document.getElementById('combatM1').innerHTML = opts;
-  document.getElementById('combatM2').innerHTML = opts;
+  document.getElementById('combatM1').innerHTML = myOpts;
+
+  if (combatMode === 'pvp') {
+    const oppOpts = opponentMonsters.length
+      ? opponentMonsters.map(m =>
+          `<option value="${m.id}">Niv.${m.level} ${m.elementType} (HP:${m.hp} ATK:${m.atk})</option>`
+        ).join('')
+      : '<option value="" disabled>— Cherche un adversaire —</option>';
+    document.getElementById('combatM2').innerHTML = oppOpts;
+  } else {
+    document.getElementById('combatM2').innerHTML = myOpts;
+  }
+}
+
+function setCombatMode(mode) {
+  combatMode = mode;
+  const isPvp = mode === 'pvp';
+  document.getElementById('pvpOpponentSection').style.display = isPvp ? 'block' : 'none';
+  document.getElementById('labelM2').textContent = isPvp ? 'Monstre adverse' : 'Monstre 2';
+  document.getElementById('btnModeSolo').classList.toggle('btn-mode-active', !isPvp);
+  document.getElementById('btnModePvp').classList.toggle('btn-mode-active', isPvp);
+  document.getElementById('btnModeSolo').classList.toggle('btn-secondary', isPvp);
+  document.getElementById('btnModePvp').classList.toggle('btn-secondary', !isPvp);
+  if (!isPvp) { opponentMonsters = []; document.getElementById('opponentStatus').textContent = ''; }
+  updateCombatSelects();
+}
+
+async function chargerAdversaire() {
+  const opp = document.getElementById('opponentUsername').value.trim();
+  const statusEl = document.getElementById('opponentStatus');
+  if (!opp) { statusEl.innerHTML = '<span class="error">Entre un nom de joueur.</span>'; return; }
+  if (opp === username) { statusEl.innerHTML = '<span class="error">Tu ne peux pas combattre contre toi-même ici — utilise le mode Duel personnel.</span>'; return; }
+  statusEl.innerHTML = '<span class="loading">Recherche...</span>';
+  try {
+    const ids = await api(`${PLAYER}/api/players/${opp}/monsters`);
+    if (!ids || ids.length === 0) { statusEl.innerHTML = '<span class="error">Ce joueur n\'a aucun monstre.</span>'; return; }
+    opponentMonsters = await Promise.all(ids.map(id => api(`${MONSTER}/api/monsters/${id}`)));
+    statusEl.innerHTML = `<span class="success">✓ ${opp} — ${opponentMonsters.length} monstre(s) disponible(s)</span>`;
+    updateCombatSelects();
+  } catch (e) {
+    statusEl.innerHTML = `<span class="error">Joueur introuvable.</span>`;
+    opponentMonsters = [];
+    updateCombatSelects();
+  }
 }
 
 async function lancerCombat() {
@@ -512,6 +613,7 @@ function combatLogHtml(log) {
 }
 
 async function loadCombats() {
+  setCombatMode(combatMode);
   updateCombatSelects();
   loadCombatHistory();
 }
