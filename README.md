@@ -58,14 +58,7 @@ Le dommage est calculé par `baseDamage + stat × ratio`. Le vainqueur reçoit 5
 
 ## Lancer le projet
 
-### 1. Cloner le dépôt
-
-```bash
-git clone <url-du-repo>
-cd Gacha
-```
-
-### 2. Démarrer tous les services
+### 1. Démarrer tous les services
 
 ```bash
 docker compose up --build
@@ -73,7 +66,7 @@ docker compose up --build
 
 > Le premier démarrage peut prendre plusieurs minutes (build Maven de chaque service).
 
-### 3. Vérifier que tout tourne
+### 2. Vérifier que tout tourne
 
 ```bash
 docker compose ps
@@ -196,7 +189,16 @@ Pour chaque requête vers les autres APIs (ports 8081–8084) :
 
 ## Tests unitaires
 
-> Java 21 et Maven doivent être installés pour lancer les tests.
+> **Prérequis** : Java 21 et Maven doivent être installés localement (pas nécessaire pour `docker compose up`).
+>
+> - Java 21
+> - Maven (l'ajouter dans les variables d'environnements)
+>
+> Vérifier l'installation :
+> ```powershell
+> java -version
+> mvn -version
+> ```
 
 Pour lancer tous les tests unitaires des 5 APIs en une seule commande (depuis la racine du projet et sur powershell) :
 
