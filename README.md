@@ -120,30 +120,32 @@ Au premier démarrage, MongoDB est automatiquement peuplé via `data/init-mongo.
 
 ## Utilisation des APIs
 
-### 1. S'authentifier
+### 1. S'authentifier avec Postman
 
-```bash
-# Inscription
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
-{ "username": "alice", "password": "alice123" }
+#### Étape 1 — Connexion (obtenir le token)
 
-# Connexion → récupérer le token
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-{ "username": "alice", "password": "alice123" }
-```
-
-Réponse :
+1. Ouvrir Postman et créer une nouvelle requête **POST**
+2. URL : `http://localhost:8080/api/auth/login`
+3. Onglet **Body** → sélectionner **raw** → type **JSON**
+4. Saisir :
 ```json
-{ "token": "U2Fsd..." }
+{ "username": "alice", "password": "alice123" }
 ```
+5. Cliquer **Send** → copier la valeur du champ `token` dans la réponse
 
-Utiliser ce token dans le header `Authorization: Bearer <token>` pour tous les appels suivants.
+#### Étape 2 — Utiliser le token dans les autres requêtes
+
+Pour chaque requête vers les autres APIs (ports 8081–8084) :
+
+1. Onglet **Authorization**
+2. Type : **Bearer Token**
+3. Coller le token dans le champ **Token**
+
+> Le token expire après **1 heure d'inactivité**. Si vous obtenez une erreur 401, refaites l'étape 1.
 
 ---
 
-### 2. API Joueur — `http://localhost:8081`
+### 2. API Joueur
 
 | Méthode | URL | Description |
 |---------|-----|-------------|
@@ -158,7 +160,7 @@ Utiliser ce token dans le header `Authorization: Bearer <token>` pour tous les a
 
 ---
 
-### 3. API Monstres — `http://localhost:8082`
+### 3. API Monstres
 
 | Méthode | URL | Description |
 |---------|-----|-------------|
@@ -170,7 +172,7 @@ Utiliser ce token dans le header `Authorization: Bearer <token>` pour tous les a
 
 ---
 
-### 4. API Invocations — `http://localhost:8083`
+### 4. API Invocations
 
 **Front-end** : ouvrir `http://localhost:8083` dans un navigateur.
 
@@ -183,7 +185,7 @@ Utiliser ce token dans le header `Authorization: Bearer <token>` pour tous les a
 
 ---
 
-### 5. API Combat — `http://localhost:8084`
+### 5. API Combat
 
 | Méthode | URL | Description |
 |---------|-----|-------------|
@@ -193,45 +195,24 @@ Utiliser ce token dans le header `Authorization: Bearer <token>` pour tous les a
 
 ---
 
-## Exemple complet
-
-```bash
-# 1. Connexion
-TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"alice123"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-
-# 2. Créer son profil joueur
-curl -X POST http://localhost:8081/api/players \
-  -H "Authorization: Bearer $TOKEN"
-
-# 3. Invoquer un monstre
-curl -X POST http://localhost:8083/api/invocations \
-  -H "Authorization: Bearer $TOKEN"
-```
-
----
-
 ## Tests unitaires
 
-> Java 21 et Maven doivent être installés localement pour lancer les tests hors Docker.
+> Java 21 et Maven doivent être installés pour lancer les tests.
 
-Pour lancer tous les tests unitaires des 5 APIs en une seule commande (depuis la racine du projet) :
+Pour lancer tous les tests unitaires des 5 APIs en une seule commande (depuis la racine du projet et sur powershell) :
 
 ```bash
-for api in authapi playerapi monsterapi invocationapi combatapi; do
-  echo "=== Tests $api ===" && (cd $api && mvn test)
-done
+foreach ($api in @("authapi","playerapi","monsterapi","invocationapi","combatapi")) { Write-Host "=== $api ===" ; Push-Location $api ; mvn test ; Pop-Location }
 ```
 
 Ou service par service :
 
 ```bash
-cd authapi      && mvn test && cd ..
-cd playerapi    && mvn test && cd ..
-cd monsterapi   && mvn test && cd ..
-cd invocationapi && mvn test && cd ..
-cd combatapi    && mvn test && cd ..
+cd authapi      && mvn test
+cd playerapi    && mvn test
+cd monsterapi   && mvn test
+cd invocationapi && mvn test
+cd combatapi    && mvn test
 ```
 
 ---
