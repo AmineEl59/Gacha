@@ -2,6 +2,8 @@
 
 Projet de jeu de type Gacha composé de 5 microservices Spring Boot communiquant entre eux, avec MongoDB comme base de données.
 
+Projet réalisé par : Adnane Ramdane, Yassine Khouchaf, Yassine Messaoui et Amine El Barkaoui
+
 **Front-end** : [http://localhost:8083](http://localhost:8083) (accessible après `docker compose up --build`)
 
 ---
@@ -52,9 +54,6 @@ Le dommage est calculé par `baseDamage + stat × ratio`. Le vainqueur reçoit 5
 
 - [Docker](https://www.docker.com/get-started) (version 20+)
 - [Docker Compose](https://docs.docker.com/compose/) (version 2+)
-
-Aucune installation de Java ou Maven n'est requise : tout est buildé dans les conteneurs.
-
 ---
 
 ## Lancer le projet
