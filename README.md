@@ -64,7 +64,7 @@ Le dommage est calculé par `baseDamage + stat × ratio`. Le vainqueur reçoit 5
 docker compose up --build
 ```
 
-> Le premier démarrage peut prendre plusieurs minutes (build Maven de chaque service).
+> Le premier démarrage peut prendre plusieurs minutes
 
 ### 2. Vérifier que tout tourne
 
@@ -90,7 +90,7 @@ docker compose down -v
 
 ## Données de test
 
-Au premier démarrage, MongoDB est automatiquement peuplé via `data/init-mongo.js` avec :
+Au premier démarrage, MongoDB récupère les données via `data/init-mongo.js` avec :
 
 **Utilisateurs** (authapi)
 | Username | Password |
@@ -192,7 +192,7 @@ Pour chaque requête vers les autres APIs (ports 8081–8084) :
 > **Prérequis** : Java 21 et Maven doivent être installés localement (pas nécessaire pour `docker compose up`).
 >
 > - Java 21
-> - Maven (l'ajouter dans les variables d'environnements)
+> - Maven (l'ajouter dans les variables d'environnement)
 >
 > Vérifier l'installation :
 > ```powershell
