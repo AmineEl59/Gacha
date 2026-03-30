@@ -37,6 +37,7 @@ public class PlayerService {
         return (int) Math.round(50 * Math.pow(1.1, level - 1));
     }
 
+    // Récupère le header Authorization de la requête HTTP courante (pour les appels inter-services)
     private String getCurrentAuthHeader() {
         HttpServletRequest request = ((ServletRequestAttributes)
                 RequestContextHolder.currentRequestAttributes()).getRequest();
@@ -45,6 +46,7 @@ public class PlayerService {
 
     // ── CRUD ──────────────────────────────────────────────────────────
 
+    // Crée un profil joueur ; lève CONFLICT si le username est déjà pris
     public Player createPlayer(String username) {
         if (playerRepository.existsByUsername(username)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Player already exists");
@@ -52,21 +54,25 @@ public class PlayerService {
         return playerRepository.save(new Player(username));
     }
 
+    // Retourne le profil complet du joueur ; lève NOT_FOUND si inexistant
     public Player getProfile(String username) {
         return playerRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
     }
 
+    // Retourne la liste des IDs de monstres appartenant au joueur
     public List<String> getMonsters(String username) {
         return getProfile(username).getMonsters();
     }
 
+    // Retourne le niveau actuel du joueur
     public int getLevel(String username) {
         return getProfile(username).getLevel();
     }
 
     // ── Experience ────────────────────────────────────────────────────
 
+    // Ajoute de l'XP au joueur et déclenche des montées de niveau automatiques jusqu'au niveau 50
     public Player gainExperience(String username, int amount) {
         Player player = getProfile(username);
         player.setExperience(player.getExperience() + amount);
@@ -79,6 +85,7 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    // Force une montée de niveau manuelle (reset XP à 0) ; refusé si déjà niveau 50
     public Player levelUp(String username) {
         Player player = getProfile(username);
         if (player.getLevel() >= 50) {
@@ -89,6 +96,7 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    // Applique la montée de niveau : +1 niveau, recalcule le seuil XP et augmente le nombre max de monstres
     private void doLevelUp(Player player) {
         player.setLevel(player.getLevel() + 1);
         player.setExperienceThreshold(computeThreshold(player.getLevel()));
@@ -97,6 +105,7 @@ public class PlayerService {
 
     // ── Monster management ────────────────────────────────────────────
 
+    // Crée un monstre via monsterapi puis l'ajoute à l'inventaire du joueur ; refusé si inventaire plein
     @SuppressWarnings("unchecked")
     public Player addMonster(String username, CreateMonsterRequest req) {
         Player player = getProfile(username);
@@ -131,6 +140,7 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    // Retire le monstre de l'inventaire du joueur et le supprime dans monsterapi
     public Player removeMonster(String username, String monsterId) {
         Player player = getProfile(username);
         if (!player.getMonsters().remove(monsterId)) {

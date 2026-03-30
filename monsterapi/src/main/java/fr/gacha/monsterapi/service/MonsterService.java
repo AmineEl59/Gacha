@@ -17,6 +17,7 @@ public class MonsterService {
         this.monsterRepository = monsterRepository;
     }
 
+    // Calcule le seuil d'XP nécessaire pour atteindre le prochain niveau (croissance exponentielle ×1.1)
     private int computeThreshold(int level) {
         if (level <= 1) return 50;
         return (int) Math.round(50 * Math.pow(1.1, level - 1));
@@ -24,6 +25,7 @@ public class MonsterService {
 
     // ── CRUD ──────────────────────────────────────────────────────────
 
+    // Crée et persiste un nouveau monstre appartenant au joueur donné
     public Monster createMonster(String ownerUsername, CreateMonsterRequest req) {
         Monster monster = new Monster(ownerUsername, req.getElementType(),
                 req.getHp(), req.getAtk(), req.getDef(), req.getVit());
@@ -45,6 +47,7 @@ public class MonsterService {
         return monster;
     }
 
+    // Supprime le monstre après vérification que le demandeur en est le propriétaire
     public void deleteMonster(String monsterId, String requesterUsername) {
         Monster monster = monsterRepository.findById(monsterId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Monster not found"));
@@ -56,6 +59,7 @@ public class MonsterService {
 
     // ── Experience ────────────────────────────────────────────────────
 
+    // Ajoute de l'XP au monstre et déclenche des montées de niveau automatiques
     public Monster gainExperience(String monsterId, String requesterUsername, int amount) {
         Monster monster = getMonsterById(monsterId);
         monster.setExperience(monster.getExperience() + amount);
@@ -68,6 +72,7 @@ public class MonsterService {
         return monsterRepository.save(monster);
     }
 
+    // Applique la montée de niveau : +1 niveau, recalcule le seuil XP, ajoute 1 skill point et +5 à chaque stat
     private void doLevelUp(Monster monster) {
         monster.setLevel(monster.getLevel() + 1);
         monster.setExperienceThreshold(computeThreshold(monster.getLevel()));
@@ -80,6 +85,7 @@ public class MonsterService {
 
     // ── Skill improvement ─────────────────────────────────────────────
 
+    // Dépense 1 skill point pour améliorer la compétence à l'index donné (+2 baseDamage)
     public Monster improveSkill(String monsterId, String requesterUsername, int skillIndex) {
         Monster monster = getMonster(monsterId, requesterUsername);
 

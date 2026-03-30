@@ -17,12 +17,14 @@ public class AuthController {
         this.authService = authService;
     }
 
+    /** Crée un nouveau compte utilisateur avec le username et le mot de passe fournis. */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         authService.register(body.get("username"), body.get("password"));
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
+    /** Authentifie l'utilisateur et retourne un token chiffré AES valable 1 heure. */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         try {
@@ -33,6 +35,7 @@ public class AuthController {
         }
     }
 
+    /** Vérifie le token Bearer et retourne le username associé ; prolonge la durée de vie de +1h. */
     @GetMapping("/validate")
     public ResponseEntity<?> validate(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

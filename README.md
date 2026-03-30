@@ -2,6 +2,8 @@
 
 Projet de jeu de type Gacha composé de 5 microservices Spring Boot communiquant entre eux, avec MongoDB comme base de données.
 
+**Front-end** : [http://localhost:8083](http://localhost:8083) (accessible après `docker compose up --build`)
+
 ---
 
 ## Architecture
@@ -14,6 +16,35 @@ Projet de jeu de type Gacha composé de 5 microservices Spring Boot communiquant
 | `invocationapi` | 8083 | Invocation aléatoire de monstres + front-end |
 | `combatapi` | 8084 | Simulation de combats automatiques |
 | `mongodb` | 27017 | Base de données (5 bases séparées) |
+
+---
+
+## Description des APIs
+
+### authapi — Authentification (port 8080)
+Gère l'inscription, la connexion et la validation des tokens.
+Chaque connexion génère un token AES chiffré valable **1 heure** (durée glissante à chaque appel).
+Tous les autres services valident leurs requêtes en appelant cet endpoint.
+
+### playerapi — Joueurs (port 8081)
+Gère les profils joueurs : création, XP, montée de niveau (max 50), et inventaire de monstres.
+La capacité d'inventaire augmente avec le niveau (`10 + niveau`).
+Communique avec `monsterapi` pour créer/supprimer des monstres.
+
+### monsterapi — Monstres (port 8082)
+Gère le cycle de vie des monstres : création, XP, montée de niveau et amélioration de compétences.
+À chaque niveau, les stats (HP, ATK, DEF, VIT) augmentent de +5 et un skill point est accordé.
+Les compétences peuvent être améliorées manuellement via les skill points.
+
+### invocationapi — Invocations (port 8083)
+Implémente la mécanique gacha : tire un monstre au sort selon des taux de probabilité paramétrables.
+L'invocation est persistée en base tampon et traitée en plusieurs étapes (création monstre → lien joueur) pour permettre le replay en cas d'échec.
+Héberge également le **front-end** à la racine `http://localhost:8083`.
+
+### combatapi — Combats (port 8084)
+Simule des combats tour par tour entre deux monstres.
+Chaque tour, le skill disponible avec le plus grand index est utilisé ; les cooldowns sont décrémentés à chaque tour.
+Le dommage est calculé par `baseDamage + stat × ratio`. Le vainqueur reçoit 50 XP. Combat limité à 100 tours.
 
 ---
 
@@ -177,6 +208,30 @@ curl -X POST http://localhost:8081/api/players \
 # 3. Invoquer un monstre
 curl -X POST http://localhost:8083/api/invocations \
   -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## Tests unitaires
+
+> Java 21 et Maven doivent être installés localement pour lancer les tests hors Docker.
+
+Pour lancer tous les tests unitaires des 5 APIs en une seule commande (depuis la racine du projet) :
+
+```bash
+for api in authapi playerapi monsterapi invocationapi combatapi; do
+  echo "=== Tests $api ===" && (cd $api && mvn test)
+done
+```
+
+Ou service par service :
+
+```bash
+cd authapi      && mvn test && cd ..
+cd playerapi    && mvn test && cd ..
+cd monsterapi   && mvn test && cd ..
+cd invocationapi && mvn test && cd ..
+cd combatapi    && mvn test && cd ..
 ```
 
 ---
